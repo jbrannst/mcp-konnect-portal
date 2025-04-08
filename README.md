@@ -1,5 +1,7 @@
 # Kong Konnect MCP Server
 
+![Static Badge](https://img.shields.io/badge/Release-Tech%20Preview-FFA500?style=plastic)
+
 A Model Context Protocol (MCP) server for interacting with Kong Konnect APIs, allowing AI assistants to query and analyze Kong Gateway configurations, traffic, and analytics.
 
 ## Table of Contents
