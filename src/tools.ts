@@ -91,5 +91,51 @@ export const tools = (): Tool[] => [
     description: prompts.checkControlPlaneGroupMembershipPrompt(),
     parameters: parameters.checkControlPlaneGroupMembershipParameters(),
     category: "control_planes"
+  },
+
+  // =========================
+  // Dev Portal Tools
+  // =========================
+  {
+    method: "list_apis",
+    name: "List APIs",
+    description: prompts.listApisPrompt(),
+    parameters: parameters.listApisParameters(),
+    category: "dev_portal"
+  },
+  {
+    method: "list_portals",
+    name: "List Portals",
+    description: prompts.listPortalsPrompt(),
+    parameters: parameters.listPortalsParameters(),
+    category: "dev_portal"
+  },
+  {
+    method: "subscribe_to_api",
+    name: "Subscribe to API",
+    description: prompts.subscribeToApiPrompt(),
+    parameters: parameters.subscribeToApiParameters(),
+    category: "dev_portal"
+  },
+  {
+    method: "generate_api_key",
+    name: "Generate API Key",
+    description: prompts.generateApiKeyPrompt(),
+    parameters: parameters.generateApiKeyParameters(),
+    category: "dev_portal"
+  },
+  {
+    method: "list_applications",
+    name: "List Applications",
+    description: prompts.listApplicationsPrompt(),
+    parameters: parameters.listApplicationsParameters(),
+    category: "dev_portal"
+  },
+  {
+    method: "list_subscriptions",
+    name: "List Subscriptions",
+    description: prompts.listSubscriptionsPrompt(),
+    parameters: parameters.listSubscriptionsParameters(),
+    category: "dev_portal"
   }
 ];

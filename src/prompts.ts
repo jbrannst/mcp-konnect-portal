@@ -237,3 +237,141 @@ OUTPUT:
     - conflicts: Array - List of configuration conflicts if any
   - relatedTools: Array - List of related tools for group management
 `;
+
+// Dev Portal Prompts
+export const listApisPrompt = () => `
+List all available APIs in the Kong Konnect Dev Portal.
+
+INPUT:
+  - controlPlaneId: String - ID of the control plane
+  - pageSize: Number - Number of APIs per page (1-1000, default: 10)
+  - pageNumber: Number (optional) - Page number to retrieve
+  - filterName: String (optional) - Filter APIs by name
+  - filterPublished: Boolean (optional) - Filter by published status
+  - sort: String (optional) - Sort field and direction (e.g. 'name,-created_at')
+
+OUTPUT:
+  - metadata: Object - Contains controlPlaneId, pageSize, pageNumber, totalPages, totalCount, filters, sort
+  - apis: Array - List of APIs with details for each including:
+    - apiId: String - Unique identifier for the API
+    - name: String - Display name of the API
+    - description: String - Description of the API
+    - version: String - Version of the API
+    - published: Boolean - Whether the API is published in the Dev Portal
+    - deprecated: Boolean - Whether the API is marked as deprecated
+    - documentation: Object - API documentation details including:
+      - specification: String - API specification (e.g., OpenAPI/Swagger)
+      - specificationFormat: String - Format of the specification (e.g., 'openapi', 'swagger')
+    - metadata: Object - Creation and update timestamps
+  - relatedTools: Array - List of related tools for API management
+`;
+
+export const listPortalsPrompt = () => `
+List all available portals in Kong Konnect.
+
+INPUT:
+  - pageSize: Number - Number of portals per page (1-1000, default: 10)
+  - pageNumber: Number (optional) - Page number to retrieve
+
+OUTPUT:
+  - metadata: Object - Contains pageSize, pageNumber, totalPages, totalCount
+  - portals: Array - List of portals with details for each including:
+    - portalId: String - Unique identifier for the portal
+    - name: String - Display name of the portal
+    - description: String - Description of the portal
+    - active: Boolean - Whether the portal is active
+    - metadata: Object - Creation and update timestamps
+  - relatedTools: Array - List of related tools for portal management
+`;
+
+export const subscribeToApiPrompt = () => `
+Subscribe to an API in the Kong Konnect Dev Portal.
+
+INPUT:
+  - controlPlaneId: String - ID of the control plane
+  - apiId: String - ID of the API to subscribe to
+  - applicationId: String - ID of the application to subscribe with, or 'new' to create a new application
+  - appName: String (optional) - Name for the new application (required if applicationId is 'new')
+  - appDescription: String (optional) - Description for the new application
+
+OUTPUT:
+  - subscription: Object - Details of the created subscription including:
+    - subscriptionId: String - Unique identifier for the subscription
+    - apiId: String - ID of the subscribed API
+    - apiName: String - Name of the subscribed API
+    - applicationId: String - ID of the application
+    - applicationName: String - Name of the application
+    - status: String - Status of the subscription (e.g., 'approved', 'pending')
+    - metadata: Object - Creation and update timestamps
+  - relatedTools: Array - List of related tools for subscription management
+`;
+
+export const generateApiKeyPrompt = () => `
+Generate an API key for a subscription in the Kong Konnect Dev Portal.
+
+INPUT:
+  - controlPlaneId: String - ID of the control plane
+  - subscriptionId: String - ID of the subscription to generate a key for
+  - name: String (optional) - Name for the API key (default: 'API Key')
+  - expiresIn: Number (optional) - Time in seconds until the key expires
+
+OUTPUT:
+  - apiKey: Object - Details of the generated API key including:
+    - id: String - Unique identifier for the API key
+    - key: String - The actual API key value (only shown once at creation)
+    - name: String - Name of the API key
+    - subscriptionId: String - ID of the associated subscription
+    - apiId: String - ID of the API this key grants access to
+    - apiName: String - Name of the API
+    - applicationId: String - ID of the application
+    - applicationName: String - Name of the application
+    - expiresAt: String - Expiration timestamp (if applicable)
+    - metadata: Object - Creation and update timestamps
+  - usage: Object - Information about how to use the API key
+`;
+
+export const listApplicationsPrompt = () => `
+List all applications in the Kong Konnect Dev Portal.
+
+INPUT:
+  - controlPlaneId: String - ID of the control plane
+  - pageSize: Number - Number of applications per page (1-1000, default: 10)
+  - pageNumber: Number (optional) - Page number to retrieve
+  - filterName: String (optional) - Filter applications by name
+  - sort: String (optional) - Sort field and direction (e.g. 'name,-created_at')
+
+OUTPUT:
+  - metadata: Object - Contains controlPlaneId, pageSize, pageNumber, totalPages, totalCount, filters, sort
+  - applications: Array - List of applications with details for each including:
+    - applicationId: String - Unique identifier for the application
+    - name: String - Display name of the application
+    - description: String - Description of the application
+    - status: String - Status of the application
+    - metadata: Object - Creation and update timestamps
+  - relatedTools: Array - List of related tools for application management
+`;
+
+export const listSubscriptionsPrompt = () => `
+List all subscriptions in the Kong Konnect Dev Portal.
+
+INPUT:
+  - controlPlaneId: String - ID of the control plane
+  - applicationId: String (optional) - Filter by application ID
+  - apiId: String (optional) - Filter by API ID
+  - pageSize: Number - Number of subscriptions per page (1-1000, default: 10)
+  - pageNumber: Number (optional) - Page number to retrieve
+  - status: String (optional) - Filter by subscription status (e.g., 'approved', 'pending')
+  - sort: String (optional) - Sort field and direction (e.g. 'created_at,-status')
+
+OUTPUT:
+  - metadata: Object - Contains controlPlaneId, pageSize, pageNumber, totalPages, totalCount, filters, sort
+  - subscriptions: Array - List of subscriptions with details for each including:
+    - subscriptionId: String - Unique identifier for the subscription
+    - apiId: String - ID of the subscribed API
+    - apiName: String - Name of the subscribed API
+    - applicationId: String - ID of the application
+    - applicationName: String - Name of the application
+    - status: String - Status of the subscription
+    - metadata: Object - Creation and update timestamps
+  - relatedTools: Array - List of related tools for subscription management
+`;

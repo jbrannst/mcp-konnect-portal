@@ -73,20 +73,28 @@ export async function getControlPlane(
 ) {
   try {
     const result = await api.getControlPlane(controlPlaneId);
+    console.error(`getControlPlane result: ${JSON.stringify(result, null, 2)}`);
 
-    // Transform the response to have consistent field names
-    const cp = result.data;
+    // The response is the control plane object directly, not wrapped in a data property
+    const cp = result;
+    
+    // Check if the response is valid
+    if (!cp || !cp.id) {
+      console.error(`Invalid response format: ${JSON.stringify(result, null, 2)}`);
+      throw new Error("Invalid response format from API");
+    }
+
     return {
       controlPlaneDetails: {
         controlPlaneId: cp.id,
         name: cp.name,
-        description: cp.description,
-        type: cp.type,
-        clusterType: cp.cluster_type,
-        controlPlaneEndpoint: cp.control_plane_endpoint,
-        telemetryEndpoint: cp.telemetry_endpoint,
-        hasCloudGateway: cp.has_cloud_gateway,
-        labels: cp.labels,
+        description: cp.description || "",
+        type: cp.type || "",
+        clusterType: cp.config?.cluster_type || "",
+        controlPlaneEndpoint: cp.config?.control_plane_endpoint || "",
+        telemetryEndpoint: cp.config?.telemetry_endpoint || "",
+        hasCloudGateway: cp.config?.cloud_gateway || false,
+        labels: cp.labels || {},
         metadata: {
           createdAt: cp.created_at,
           updatedAt: cp.updated_at

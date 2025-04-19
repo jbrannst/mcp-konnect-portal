@@ -162,3 +162,113 @@ export const checkControlPlaneGroupMembershipParameters = () => z.object({
   controlPlaneId: z.string()
     .describe("Control plane ID to check (can be obtained from list-control-planes tool)"),
 });
+
+// =========================
+// Dev Portal Tools
+// =========================
+
+export const listApisParameters = () => z.object({
+  controlPlaneId: z.string()
+    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
+  pageSize: z.number().int()
+    .min(1).max(1000)
+    .default(10)
+    .describe("Number of APIs per page"),
+  pageNumber: z.number().int()
+    .min(1)
+    .optional()
+    .describe("Page number to retrieve"),
+  filterName: z.string()
+    .optional()
+    .describe("Filter APIs by name (contains)"),
+  filterPublished: z.boolean()
+    .optional()
+    .describe("Filter by published status"),
+  sort: z.string()
+    .optional()
+    .describe("Sort field and direction (e.g. 'name,-created_at')"),
+});
+
+export const listPortalsParameters = () => z.object({
+  pageSize: z.number().int()
+    .min(1).max(1000)
+    .default(10)
+    .describe("Number of portals per page"),
+  pageNumber: z.number().int()
+    .min(1)
+    .optional()
+    .describe("Page number to retrieve"),
+});
+
+export const subscribeToApiParameters = () => z.object({
+  controlPlaneId: z.string()
+    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
+  apiId: z.string()
+    .describe("API ID to subscribe to (obtainable from list-apis tool)"),
+  applicationId: z.string()
+    .describe("Application ID to subscribe with (obtainable from list-applications tool, or use 'new' to create a new application)"),
+  appName: z.string()
+    .optional()
+    .describe("Name for the new application (required if applicationId is 'new')"),
+  appDescription: z.string()
+    .optional()
+    .describe("Description for the new application (optional, used only if applicationId is 'new')"),
+});
+
+export const generateApiKeyParameters = () => z.object({
+  controlPlaneId: z.string()
+    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
+  subscriptionId: z.string()
+    .describe("Subscription ID to generate key for (obtainable from subscribe-to-api or list-subscriptions tool)"),
+  name: z.string()
+    .optional()
+    .default("API Key")
+    .describe("Name for the API key"),
+  expiresIn: z.number().int()
+    .optional()
+    .describe("Time in seconds until the key expires (optional)"),
+});
+
+export const listApplicationsParameters = () => z.object({
+  controlPlaneId: z.string()
+    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
+  pageSize: z.number().int()
+    .min(1).max(1000)
+    .default(10)
+    .describe("Number of applications per page"),
+  pageNumber: z.number().int()
+    .min(1)
+    .optional()
+    .describe("Page number to retrieve"),
+  filterName: z.string()
+    .optional()
+    .describe("Filter applications by name (contains)"),
+  sort: z.string()
+    .optional()
+    .describe("Sort field and direction (e.g. 'name,-created_at')"),
+});
+
+export const listSubscriptionsParameters = () => z.object({
+  controlPlaneId: z.string()
+    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
+  applicationId: z.string()
+    .optional()
+    .describe("Filter by application ID (obtainable from list-applications tool)"),
+  apiId: z.string()
+    .optional()
+    .describe("Filter by API ID (obtainable from list-apis tool)"),
+  pageSize: z.number().int()
+    .min(1).max(1000)
+    .default(10)
+    .describe("Number of subscriptions per page"),
+  pageNumber: z.number().int()
+    .min(1)
+    .optional()
+    .describe("Page number to retrieve"),
+  status: z.string()
+    .optional()
+    .describe("Filter by subscription status (e.g., 'approved', 'pending')"),
+  sort: z.string()
+    .optional()
+    .describe("Sort field and direction (e.g. 'created_at,-status')"),
+});

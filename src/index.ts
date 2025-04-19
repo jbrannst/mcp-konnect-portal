@@ -6,6 +6,7 @@ import { KongApi, API_REGIONS } from "./api.js";
 import * as analytics from "./operations/analytics.js";
 import * as configuration from "./operations/configuration.js";
 import * as controlPlanes from "./operations/controlPlanes.js";
+import * as devPortal from "./operations/devPortal.js";
 
 /**
  * Main MCP server class for Kong Konnect integration
@@ -141,6 +142,72 @@ class KongKonnectMcpServer extends McpServer {
                 result = await controlPlanes.checkControlPlaneGroupMembership(
                   this.api,
                   args.controlPlaneId
+                );
+                break;
+              
+              // Dev Portal tools
+              case "list_apis":
+                result = await devPortal.listApis(
+                  this.api,
+                  args.controlPlaneId,
+                  args.pageSize,
+                  args.pageNumber,
+                  args.filterName,
+                  args.filterPublished,
+                  args.sort
+                );
+                break;
+                
+              case "list_portals":
+                result = await devPortal.listPortals(
+                  this.api,
+                  args.pageSize,
+                  args.pageNumber
+                );
+                break;
+
+              case "subscribe_to_api":
+                result = await devPortal.subscribeToApi(
+                  this.api,
+                  args.controlPlaneId,
+                  args.apiId,
+                  args.applicationId,
+                  args.appName,
+                  args.appDescription
+                );
+                break;
+
+              case "generate_api_key":
+                result = await devPortal.generateApiKey(
+                  this.api,
+                  args.controlPlaneId,
+                  args.subscriptionId,
+                  args.name,
+                  args.expiresIn
+                );
+                break;
+
+              case "list_applications":
+                result = await devPortal.listApplications(
+                  this.api,
+                  args.controlPlaneId,
+                  args.pageSize,
+                  args.pageNumber,
+                  args.filterName,
+                  args.sort
+                );
+                break;
+
+              case "list_subscriptions":
+                result = await devPortal.listSubscriptions(
+                  this.api,
+                  args.controlPlaneId,
+                  args.applicationId,
+                  args.apiId,
+                  args.pageSize,
+                  args.pageNumber,
+                  args.status,
+                  args.sort
                 );
                 break;
                 

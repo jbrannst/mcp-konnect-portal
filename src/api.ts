@@ -41,7 +41,15 @@ export class KongApi {
    */
   async kongRequest<T>(endpoint: string, method = "GET", data: any = null): Promise<T> {
     try {
-      const url = `${this.baseUrl}${endpoint}`;
+      // Handle different API versions
+      let baseUrl = this.baseUrl;
+      
+      // If the endpoint starts with /v3, use a base URL without version
+      if (endpoint.startsWith("/v3")) {
+        baseUrl = baseUrl.replace("/v2", "");
+      }
+      
+      const url = `${baseUrl}${endpoint}`;
       console.error(`Making request to: ${url}`);
 
       const headers = {
@@ -57,8 +65,10 @@ export class KongApi {
         data: data ? data : undefined,
       };
 
+      console.error(`Sending request...`);
       const response = await axios(config);
       console.error(`Received response with status: ${response.status}`);
+      console.error(`Response data: ${JSON.stringify(response.data, null, 2).substring(0, 500)}...`);
       return response.data;
     } catch (error: any) {
       console.error("API request error:", error.message);
@@ -187,5 +197,166 @@ export class KongApi {
     }
 
     return this.kongRequest<any>(endpoint);
+  }
+
+  // Dev Portal API methods
+  async listDevPortalApis(
+    controlPlaneId: string, 
+    pageSize = 10, 
+    pageNumber?: number, 
+    filterName?: string, 
+    filterPublished?: boolean, 
+    sort?: string
+  ): Promise<any> {
+    // Using v3 API endpoint for Dev Portal
+    let endpoint = `/v3/apis?page[size]=${pageSize}`;
+
+    if (pageNumber) {
+      endpoint += `&page[number]=${pageNumber}`;
+    }
+
+    if (filterName) {
+      endpoint += `&filter[name][contains]=${encodeURIComponent(filterName)}`;
+    }
+
+    if (filterPublished !== undefined) {
+      endpoint += `&filter[published]=${filterPublished}`;
+    }
+
+    if (sort) {
+      endpoint += `&sort=${encodeURIComponent(sort)}`;
+    }
+
+    return this.kongRequest<any>(endpoint);
+  }
+
+  async createDevPortalApplication(
+    controlPlaneId: string,
+    name: string,
+    description: string
+  ): Promise<any> {
+    // Using v3 API endpoint for Dev Portal
+    const endpoint = `/v3/applications`;
+    const data = {
+      name,
+      description
+    };
+
+    return this.kongRequest<any>(endpoint, "POST", data);
+  }
+
+  async listDevPortalPortals(
+    pageSize = 10,
+    pageNumber?: number
+  ): Promise<any> {
+    // Using v3 API endpoint for Dev Portal
+    let endpoint = `/v3/portals?page[size]=${pageSize}`;
+
+    if (pageNumber) {
+      endpoint += `&page[number]=${pageNumber}`;
+    }
+
+    return this.kongRequest<any>(endpoint);
+  }
+
+  async listDevPortalApplications(
+    controlPlaneId: string,
+    pageSize = 10,
+    pageNumber?: number,
+    filterName?: string,
+    sort?: string
+  ): Promise<any> {
+    // Using v3 API endpoint for Dev Portal
+    let endpoint = `/v3/applications?page[size]=${pageSize}`;
+
+    if (pageNumber) {
+      endpoint += `&page[number]=${pageNumber}`;
+    }
+
+    if (filterName) {
+      endpoint += `&filter[name][contains]=${encodeURIComponent(filterName)}`;
+    }
+
+    if (sort) {
+      endpoint += `&sort=${encodeURIComponent(sort)}`;
+    }
+
+    return this.kongRequest<any>(endpoint);
+  }
+
+  async createDevPortalSubscription(
+    controlPlaneId: string,
+    apiId: string,
+    applicationId: string
+  ): Promise<any> {
+    // Using v3 API endpoint for Dev Portal
+    const endpoint = `/v3/subscriptions`;
+    const data = {
+      api: {
+        id: apiId
+      },
+      application: {
+        id: applicationId
+      }
+    };
+
+    return this.kongRequest<any>(endpoint, "POST", data);
+  }
+
+  async listDevPortalSubscriptions(
+    controlPlaneId: string,
+    applicationId?: string,
+    apiId?: string,
+    pageSize = 10,
+    pageNumber?: number,
+    status?: string,
+    sort?: string
+  ): Promise<any> {
+    // Using v3 API endpoint for Dev Portal
+    let endpoint = `/v3/subscriptions?page[size]=${pageSize}`;
+
+    if (pageNumber) {
+      endpoint += `&page[number]=${pageNumber}`;
+    }
+
+    if (applicationId) {
+      endpoint += `&filter[application.id][eq]=${applicationId}`;
+    }
+
+    if (apiId) {
+      endpoint += `&filter[api.id][eq]=${apiId}`;
+    }
+
+    if (status) {
+      endpoint += `&filter[status][eq]=${status}`;
+    }
+
+    if (sort) {
+      endpoint += `&sort=${encodeURIComponent(sort)}`;
+    }
+
+    return this.kongRequest<any>(endpoint);
+  }
+
+  async createDevPortalApiKey(
+    controlPlaneId: string,
+    subscriptionId: string,
+    name: string,
+    expiresIn?: number
+  ): Promise<any> {
+    // Using v3 API endpoint for Dev Portal
+    const endpoint = `/v3/api-keys`;
+    const data: any = {
+      name,
+      subscription: {
+        id: subscriptionId
+      }
+    };
+
+    if (expiresIn) {
+      data.expires_in = expiresIn;
+    }
+
+    return this.kongRequest<any>(endpoint, "POST", data);
   }
 }
