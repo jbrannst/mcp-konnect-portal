@@ -22,13 +22,15 @@ export interface KongApiOptions {
 }
 
 export class KongApi {
-  private baseUrl: string;
+  private adminBaseUrl: string;
   private apiKey: string;
+  private portalBaseUrls: Map<string, string> = new Map();
+  private portalAuthCookies: Map<string, string> = new Map();
 
   constructor(options: KongApiOptions = {}) {
     // Default to US region if not specified
     const apiRegion = options.apiRegion || process.env.KONNECT_REGION || API_REGIONS.US;
-    this.baseUrl = `https://${apiRegion}.api.konghq.com/v2`;
+    this.adminBaseUrl = `https://${apiRegion}.api.konghq.com/v2`;
     this.apiKey = options.apiKey || process.env.KONNECT_ACCESS_TOKEN || "";
 
     if (!this.apiKey) {
@@ -37,26 +39,89 @@ export class KongApi {
   }
 
   /**
+   * Get the base URL for a specific portal
+   * @param portalId The ID of the portal
+   * @returns The base URL for the portal
+   */
+  async getPortalBaseUrl(portalId: string): Promise<string> {
+    // Check if we already have the base URL for this portal
+    if (this.portalBaseUrls.has(portalId)) {
+      return this.portalBaseUrls.get(portalId)!;
+    }
+
+    // For the specific portal ID we're working with, use the hardcoded URL
+    if (portalId === "9848ffe2-c4d1-4841-9e0d-663d151ce736") {
+      const baseUrl = "https://affdbf0ae586.edge.eu.portal.konghq.com";
+      this.portalBaseUrls.set(portalId, baseUrl);
+      return baseUrl;
+    }
+
+    // Otherwise, fetch the portal details to get the canonical domain
+    try {
+      const portals = await this.listDevPortalPortals();
+      const portal = portals.data.find((p: any) => p.id === portalId);
+      
+      if (!portal) {
+        throw new Error(`Portal with ID ${portalId} not found`);
+      }
+
+      const baseUrl = `https://${portal.canonical_domain}`;
+      this.portalBaseUrls.set(portalId, baseUrl);
+      return baseUrl;
+    } catch (error) {
+      console.error(`Error getting portal base URL for portal ${portalId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Makes authenticated requests to Kong APIs with consistent error handling
    */
-  async kongRequest<T>(endpoint: string, method = "GET", data: any = null): Promise<T> {
+  async kongRequest<T>(
+    endpoint: string, 
+    method = "GET", 
+    data: any = null, 
+    usePortalBaseUrl = false,
+    portalId?: string,
+    cookies?: string
+  ): Promise<T> {
     try {
-      // Handle different API versions
-      let baseUrl = this.baseUrl;
-      
-      // If the endpoint starts with /v3, use a base URL without version
-      if (endpoint.startsWith("/v3")) {
-        baseUrl = baseUrl.replace("/v2", "");
-      }
-      
-      const url = `${baseUrl}${endpoint}`;
-      console.error(`Making request to: ${url}`);
-
-      const headers = {
-        "Authorization": `Bearer ${this.apiKey}`,
+      let url: string;
+      let headers: Record<string, string> = {
         "Content-Type": "application/json",
         "Accept": "application/json"
       };
+
+      if (usePortalBaseUrl && portalId) {
+        // Use the portal base URL for developer portal endpoints
+        const portalBaseUrl = await this.getPortalBaseUrl(portalId);
+        url = `${portalBaseUrl}${endpoint}`;
+        
+        // For portal requests, use cookies for authentication if provided
+        if (cookies) {
+          headers["Cookie"] = cookies;
+        } 
+        // Or use stored cookies if available
+        else if (this.portalAuthCookies.has(portalId)) {
+          headers["Cookie"] = this.portalAuthCookies.get(portalId)!;
+          console.error(`Using stored authentication cookie for portal ${portalId}`);
+        }
+      } else {
+        // Use the admin base URL for Konnect Admin API endpoints
+        let baseUrl = this.adminBaseUrl;
+        
+        // If the endpoint starts with /v3, use a base URL without version
+        if (endpoint.startsWith("/v3")) {
+          baseUrl = baseUrl.replace("/v2", "");
+        }
+        
+        url = `${baseUrl}${endpoint}`;
+        
+        // For admin API requests, use bearer token authentication
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+      
+      console.error(`Making request to: ${url}`);
 
       const config: AxiosRequestConfig = {
         method,
@@ -68,6 +133,13 @@ export class KongApi {
       console.error(`Sending request...`);
       const response = await axios(config);
       console.error(`Received response with status: ${response.status}`);
+      
+      // Handle 204 No Content responses (like from authenticate endpoint)
+      if (response.status === 204) {
+        console.error(`Received 204 No Content response`);
+        return { success: true } as unknown as T;
+      }
+      
       console.error(`Response data: ${JSON.stringify(response.data, null, 2).substring(0, 500)}...`);
       return response.data;
     } catch (error: any) {
@@ -199,17 +271,101 @@ export class KongApi {
     return this.kongRequest<any>(endpoint);
   }
 
+  /**
+   * Authenticate as a developer to the Dev Portal
+   * @param portalId The ID of the portal to authenticate with
+   * @param username The developer's email (defaults to DEV_PORTAL_USER environment variable)
+   * @param password The developer's password (defaults to DEV_PORTAL_PASSWORD environment variable)
+   * @returns Authentication response including access token
+   */
+  async authenticateDevPortalDeveloper(
+    portalId: string,
+    username?: string,
+    password?: string
+  ): Promise<any> {
+    // Using portal API endpoint for developer authentication
+    const endpoint = `/api/v3/developer/authenticate`;
+    
+    // Use provided credentials or fall back to environment variables
+    const developerUsername = username || process.env.DEV_PORTAL_USER;
+    const developerPassword = password || process.env.DEV_PORTAL_PASSWORD;
+    
+    if (!developerUsername || !developerPassword) {
+      throw new Error("Developer credentials not provided and not found in environment variables (DEV_PORTAL_USER, DEV_PORTAL_PASSWORD)");
+    }
+    
+    const data = {
+      username: developerUsername,
+      password: developerPassword
+    };
+
+    try {
+      // Make a direct axios request to get the cookies
+      const portalBaseUrl = await this.getPortalBaseUrl(portalId);
+      const url = `${portalBaseUrl}${endpoint}`;
+      
+      console.error(`Making direct authentication request to: ${url}`);
+      
+      const response = await axios({
+        method: "POST",
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        data,
+        maxRedirects: 0,
+        validateStatus: (status) => status >= 200 && status < 400
+      });
+      
+      console.error(`Authentication response status: ${response.status}`);
+      
+      // Extract the cookies from the response
+      const cookies = response.headers['set-cookie'];
+      if (cookies && cookies.length > 0) {
+        // Find the portalaccesstoken cookie
+        for (const cookie of cookies) {
+          if (cookie.includes('portalaccesstoken')) {
+            const tokenMatch = cookie.match(/portalaccesstoken=([^;]+)/);
+            if (tokenMatch && tokenMatch[1]) {
+              const token = tokenMatch[1];
+              console.error(`Found portalaccesstoken: ${token.substring(0, 10)}...`);
+              this.portalAuthCookies.set(portalId, `portalaccesstoken=${token}`);
+              break;
+            }
+          }
+        }
+      }
+      
+      // Return a success response
+      return {
+        authentication: {
+          status: "success",
+          message: "Successfully authenticated with the developer portal"
+        },
+        usage: {
+          instructions: "You are now authenticated with the developer portal. You can use other Dev Portal tools without providing a portalAccessToken.",
+          security: "Your authentication is stored in cookies managed by the API client."
+        }
+      };
+    } catch (error: any) {
+      console.error("Authentication error:", error.message);
+      throw error;
+    }
+  }
+
   // Dev Portal API methods
   async listDevPortalApis(
-    controlPlaneId: string, 
     pageSize = 10, 
     pageNumber?: number, 
     filterName?: string, 
     filterPublished?: boolean, 
-    sort?: string
+    sort?: string,
+    portalId?: string,
+    portalAccessToken?: string
   ): Promise<any> {
-    // Using v3 API endpoint for Dev Portal
-    let endpoint = `/v3/apis?page[size]=${pageSize}`;
+    // Using portal API endpoint for Dev Portal
+    let endpoint = `/api/v3/apis?page[size]=${pageSize}`;
 
     if (pageNumber) {
       endpoint += `&page[number]=${pageNumber}`;
@@ -227,29 +383,56 @@ export class KongApi {
       endpoint += `&sort=${encodeURIComponent(sort)}`;
     }
 
-    return this.kongRequest<any>(endpoint);
+    // If portalId is provided, use the portal base URL
+    if (portalId) {
+      return this.kongRequest<any>(
+        endpoint, 
+        "GET", 
+        null, 
+        true, 
+        portalId, 
+        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+      );
+    } else {
+      // Fall back to admin API for backward compatibility
+      return this.kongRequest<any>(`/v3/apis?page[size]=${pageSize}`);
+    }
   }
 
   async createDevPortalApplication(
-    controlPlaneId: string,
     name: string,
-    description: string
+    description: string,
+    portalId?: string,
+    portalAccessToken?: string
   ): Promise<any> {
-    // Using v3 API endpoint for Dev Portal
-    const endpoint = `/v3/applications`;
+    // Using portal API endpoint for Dev Portal
+    const endpoint = `/api/v3/applications`;
     const data = {
       name,
       description
     };
 
-    return this.kongRequest<any>(endpoint, "POST", data);
+    // If portalId is provided, use the portal base URL
+    if (portalId) {
+      return this.kongRequest<any>(
+        endpoint, 
+        "POST", 
+        data, 
+        true, 
+        portalId, 
+        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+      );
+    } else {
+      // Fall back to admin API for backward compatibility
+      return this.kongRequest<any>(`/v3/applications`, "POST", data);
+    }
   }
 
   async listDevPortalPortals(
     pageSize = 10,
     pageNumber?: number
   ): Promise<any> {
-    // Using v3 API endpoint for Dev Portal
+    // This method always uses the admin API since we need to list all portals
     let endpoint = `/v3/portals?page[size]=${pageSize}`;
 
     if (pageNumber) {
@@ -260,14 +443,15 @@ export class KongApi {
   }
 
   async listDevPortalApplications(
-    controlPlaneId: string,
     pageSize = 10,
     pageNumber?: number,
     filterName?: string,
-    sort?: string
+    sort?: string,
+    portalId?: string,
+    portalAccessToken?: string
   ): Promise<any> {
-    // Using v3 API endpoint for Dev Portal
-    let endpoint = `/v3/applications?page[size]=${pageSize}`;
+    // Using portal API endpoint for Dev Portal
+    let endpoint = `/api/v3/applications?page[size]=${pageSize}`;
 
     if (pageNumber) {
       endpoint += `&page[number]=${pageNumber}`;
@@ -281,46 +465,76 @@ export class KongApi {
       endpoint += `&sort=${encodeURIComponent(sort)}`;
     }
 
-    return this.kongRequest<any>(endpoint);
+    // If portalId is provided, use the portal base URL
+    if (portalId) {
+      return this.kongRequest<any>(
+        endpoint, 
+        "GET", 
+        null, 
+        true, 
+        portalId, 
+        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+      );
+    } else {
+      // Fall back to admin API for backward compatibility
+      return this.kongRequest<any>(`/v3/applications?page[size]=${pageSize}`);
+    }
   }
 
   async createDevPortalSubscription(
-    controlPlaneId: string,
     apiId: string,
-    applicationId: string
+    applicationId: string,
+    portalId?: string,
+    portalAccessToken?: string
   ): Promise<any> {
-    // Using v3 API endpoint for Dev Portal
-    const endpoint = `/v3/subscriptions`;
+    // Using portal API endpoint for Dev Portal
+    const endpoint = `/api/v3/applications/${applicationId}/registrations`;
     const data = {
-      api: {
-        id: apiId
-      },
-      application: {
-        id: applicationId
-      }
+      api_id: apiId
     };
 
-    return this.kongRequest<any>(endpoint, "POST", data);
+    // If portalId is provided, use the portal base URL
+    if (portalId) {
+      return this.kongRequest<any>(
+        endpoint, 
+        "POST", 
+        data, 
+        true, 
+        portalId, 
+        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+      );
+    } else {
+      // Fall back to admin API for backward compatibility
+      return this.kongRequest<any>(`/v3/subscriptions`, "POST", {
+        api: { id: apiId },
+        application: { id: applicationId }
+      });
+    }
   }
 
   async listDevPortalSubscriptions(
-    controlPlaneId: string,
     applicationId?: string,
     apiId?: string,
     pageSize = 10,
     pageNumber?: number,
     status?: string,
-    sort?: string
+    sort?: string,
+    portalId?: string,
+    portalAccessToken?: string
   ): Promise<any> {
-    // Using v3 API endpoint for Dev Portal
-    let endpoint = `/v3/subscriptions?page[size]=${pageSize}`;
+    // Using portal API endpoint for Dev Portal
+    let endpoint: string;
+    
+    if (applicationId) {
+      // If applicationId is provided, use the application registrations endpoint
+      endpoint = `/api/v3/applications/${applicationId}/registrations?page[size]=${pageSize}`;
+    } else {
+      // Otherwise, use a generic endpoint
+      endpoint = `/api/v3/registrations?page[size]=${pageSize}`;
+    }
 
     if (pageNumber) {
       endpoint += `&page[number]=${pageNumber}`;
-    }
-
-    if (applicationId) {
-      endpoint += `&filter[application.id][eq]=${applicationId}`;
     }
 
     if (apiId) {
@@ -335,28 +549,85 @@ export class KongApi {
       endpoint += `&sort=${encodeURIComponent(sort)}`;
     }
 
-    return this.kongRequest<any>(endpoint);
+    // If portalId is provided, use the portal base URL
+    if (portalId) {
+      return this.kongRequest<any>(
+        endpoint, 
+        "GET", 
+        null, 
+        true, 
+        portalId, 
+        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+      );
+    } else {
+      // Fall back to admin API for backward compatibility
+      let adminEndpoint = `/v3/subscriptions?page[size]=${pageSize}`;
+      
+      if (pageNumber) {
+        adminEndpoint += `&page[number]=${pageNumber}`;
+      }
+      
+      if (applicationId) {
+        adminEndpoint += `&filter[application.id][eq]=${applicationId}`;
+      }
+      
+      if (apiId) {
+        adminEndpoint += `&filter[api.id][eq]=${apiId}`;
+      }
+      
+      if (status) {
+        adminEndpoint += `&filter[status][eq]=${status}`;
+      }
+      
+      if (sort) {
+        adminEndpoint += `&sort=${encodeURIComponent(sort)}`;
+      }
+      
+      return this.kongRequest<any>(adminEndpoint);
+    }
   }
 
   async createDevPortalApiKey(
-    controlPlaneId: string,
-    subscriptionId: string,
+    applicationId: string,
     name: string,
-    expiresIn?: number
+    expiresIn?: number,
+    portalId?: string,
+    portalAccessToken?: string
   ): Promise<any> {
-    // Using v3 API endpoint for Dev Portal
-    const endpoint = `/v3/api-keys`;
+    // Using portal API endpoint for Dev Portal
+    const endpoint = `/api/v3/applications/${applicationId}/credentials`;
     const data: any = {
-      name,
-      subscription: {
-        id: subscriptionId
-      }
+      display_name: name
     };
 
     if (expiresIn) {
       data.expires_in = expiresIn;
     }
 
-    return this.kongRequest<any>(endpoint, "POST", data);
+    // If portalId is provided, use the portal base URL
+    if (portalId) {
+      return this.kongRequest<any>(
+        endpoint, 
+        "POST", 
+        data, 
+        true, 
+        portalId, 
+        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+      );
+    } else {
+      // Fall back to admin API for backward compatibility
+      const adminData: any = {
+        name,
+        application: {
+          id: applicationId
+        }
+      };
+      
+      if (expiresIn) {
+        adminData.expires_in = expiresIn;
+      }
+      
+      return this.kongRequest<any>(`/v3/api-keys`, "POST", adminData);
+    }
   }
 }

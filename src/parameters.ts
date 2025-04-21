@@ -167,9 +167,18 @@ export const checkControlPlaneGroupMembershipParameters = () => z.object({
 // Dev Portal Tools
 // =========================
 
+export const authenticateDevPortalDeveloperParameters = () => z.object({
+  portalId: z.string()
+    .describe("Portal ID to authenticate with (obtainable from list-portals tool)"),
+  username: z.string()
+    .optional()
+    .describe("Developer username (email) for authentication (optional, defaults to DEV_PORTAL_USER environment variable)"),
+  password: z.string()
+    .optional()
+    .describe("Developer password for authentication (optional, defaults to DEV_PORTAL_PASSWORD environment variable)")
+});
+
 export const listApisParameters = () => z.object({
-  controlPlaneId: z.string()
-    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
   pageSize: z.number().int()
     .min(1).max(1000)
     .default(10)
@@ -187,6 +196,12 @@ export const listApisParameters = () => z.object({
   sort: z.string()
     .optional()
     .describe("Sort field and direction (e.g. 'name,-created_at')"),
+  portalId: z.string()
+    .optional()
+    .describe("Portal ID to use for direct portal API access (obtainable from list-portals tool)"),
+  portalAccessToken: z.string()
+    .optional()
+    .describe("Portal access token for authentication with the portal API"),
 });
 
 export const listPortalsParameters = () => z.object({
@@ -201,8 +216,6 @@ export const listPortalsParameters = () => z.object({
 });
 
 export const subscribeToApiParameters = () => z.object({
-  controlPlaneId: z.string()
-    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
   apiId: z.string()
     .describe("API ID to subscribe to (obtainable from list-apis tool)"),
   applicationId: z.string()
@@ -213,13 +226,17 @@ export const subscribeToApiParameters = () => z.object({
   appDescription: z.string()
     .optional()
     .describe("Description for the new application (optional, used only if applicationId is 'new')"),
+  portalId: z.string()
+    .optional()
+    .describe("Portal ID to use for direct portal API access (obtainable from list-portals tool)"),
+  portalAccessToken: z.string()
+    .optional()
+    .describe("Portal access token for authentication with the portal API"),
 });
 
 export const generateApiKeyParameters = () => z.object({
-  controlPlaneId: z.string()
-    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
-  subscriptionId: z.string()
-    .describe("Subscription ID to generate key for (obtainable from subscribe-to-api or list-subscriptions tool)"),
+  applicationId: z.string()
+    .describe("Application ID to generate key for (obtainable from list-applications tool)"),
   name: z.string()
     .optional()
     .default("API Key")
@@ -227,11 +244,15 @@ export const generateApiKeyParameters = () => z.object({
   expiresIn: z.number().int()
     .optional()
     .describe("Time in seconds until the key expires (optional)"),
+  portalId: z.string()
+    .optional()
+    .describe("Portal ID to use for direct portal API access (obtainable from list-portals tool)"),
+  portalAccessToken: z.string()
+    .optional()
+    .describe("Portal access token for authentication with the portal API"),
 });
 
 export const listApplicationsParameters = () => z.object({
-  controlPlaneId: z.string()
-    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
   pageSize: z.number().int()
     .min(1).max(1000)
     .default(10)
@@ -246,11 +267,15 @@ export const listApplicationsParameters = () => z.object({
   sort: z.string()
     .optional()
     .describe("Sort field and direction (e.g. 'name,-created_at')"),
+  portalId: z.string()
+    .optional()
+    .describe("Portal ID to use for direct portal API access (obtainable from list-portals tool)"),
+  portalAccessToken: z.string()
+    .optional()
+    .describe("Portal access token for authentication with the portal API"),
 });
 
 export const listSubscriptionsParameters = () => z.object({
-  controlPlaneId: z.string()
-    .describe("Control Plane ID (obtainable from list-control-planes tool)"),
   applicationId: z.string()
     .optional()
     .describe("Filter by application ID (obtainable from list-applications tool)"),
@@ -271,4 +296,10 @@ export const listSubscriptionsParameters = () => z.object({
   sort: z.string()
     .optional()
     .describe("Sort field and direction (e.g. 'created_at,-status')"),
+  portalId: z.string()
+    .optional()
+    .describe("Portal ID to use for direct portal API access (obtainable from list-portals tool)"),
+  portalAccessToken: z.string()
+    .optional()
+    .describe("Portal access token for authentication with the portal API"),
 });

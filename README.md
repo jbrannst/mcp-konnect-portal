@@ -17,6 +17,7 @@ https://github.com/user-attachments/assets/19c2f716-49b5-46c3-9457-65b3784e2111
   - [Analytics Tools](#analytics-tools)
   - [Configuration Tools](#configuration-tools) 
   - [Control Planes Tools](#control-planes-tools)
+  - [Developer Portal Tools](#developer-portal-tools)
 - [Usage with Claude](#usage-with-claude)
 - [Example Workflows](#example-workflows)
 - [Development](#development)
@@ -46,7 +47,8 @@ src/
 ├── operations/
 │   ├── analytics.ts      # API request analytics operations
 │   ├── configuration.ts  # Services, routes, consumers, plugins
-│   └── controlPlanes.ts  # Control plane management
+│   ├── controlPlanes.ts  # Control plane management
+│   └── devPortal.ts      # Developer portal operations
 └── types.ts              # Common type definitions
 ```
 
@@ -201,6 +203,89 @@ Inputs:
 - controlPlaneId: Control plane ID to check
 ```
 
+### Developer Portal Tools
+
+#### List Portals
+List all available portals in Kong Konnect.
+
+```
+Inputs:
+- pageSize: Number of portals per page
+- pageNumber: Page number to retrieve
+```
+
+#### List APIs
+List all available APIs in the Kong Konnect Dev Portal.
+
+```
+Inputs:
+- controlPlaneId: ID of the control plane
+- pageSize: Number of APIs per page
+- pageNumber: Page number to retrieve
+- filterName: Filter APIs by name
+- filterPublished: Filter by published status
+- sort: Sort field and direction
+- portalId: Portal ID to use for direct portal API access
+- portalAccessToken: Portal access token for authentication
+```
+
+#### Subscribe to API
+Subscribe to an API in the Kong Konnect Dev Portal.
+
+```
+Inputs:
+- controlPlaneId: ID of the control plane
+- apiId: ID of the API to subscribe to
+- applicationId: ID of the application to subscribe with
+- appName: Name for the new application (if creating)
+- appDescription: Description for the new application
+- portalId: Portal ID to use for direct portal API access
+- portalAccessToken: Portal access token for authentication
+```
+
+#### Generate API Key
+Generate an API key for a subscription in the Kong Konnect Dev Portal.
+
+```
+Inputs:
+- controlPlaneId: ID of the control plane
+- subscriptionId: ID of the subscription to generate key for
+- name: Name for the API key
+- expiresIn: Time in seconds until the key expires
+- portalId: Portal ID to use for direct portal API access
+- portalAccessToken: Portal access token for authentication
+```
+
+#### List Applications
+List all applications in the Kong Konnect Dev Portal.
+
+```
+Inputs:
+- controlPlaneId: ID of the control plane
+- pageSize: Number of applications per page
+- pageNumber: Page number to retrieve
+- filterName: Filter applications by name
+- sort: Sort field and direction
+- portalId: Portal ID to use for direct portal API access
+- portalAccessToken: Portal access token for authentication
+```
+
+#### List Subscriptions
+List all subscriptions in the Kong Konnect Dev Portal.
+
+```
+Inputs:
+- controlPlaneId: ID of the control plane
+- applicationId: Filter by application ID
+- apiId: Filter by API ID
+- pageSize: Number of subscriptions per page
+- pageNumber: Page number to retrieve
+- status: Filter by subscription status
+- sort: Sort field and direction
+- portalId: Portal ID to use for direct portal API access
+- portalAccessToken: Portal access token for authentication
+```
+
 ## Usage with Claude
 
 To use this MCP server with Claude for Desktop:
@@ -266,6 +351,28 @@ To use this MCP server with Claude for Desktop:
 3. Check for common errors or patterns:
    ```
    What are the most common errors experienced by this consumer?
+   ```
+
+### Working with Developer Portal
+
+1. List available portals:
+   ```
+   List all developer portals in my Kong Konnect organization.
+   ```
+
+2. List APIs in a portal:
+   ```
+   List all APIs available in the developer portal [PORTAL_ID].
+   ```
+
+3. Create an application and subscribe to an API:
+   ```
+   Create a new application named "Test App" and subscribe it to the API [API_ID] in portal [PORTAL_ID].
+   ```
+
+4. Generate an API key for a subscription:
+   ```
+   Generate an API key for subscription [SUBSCRIPTION_ID] in portal [PORTAL_ID].
    ```
 
 ## Development

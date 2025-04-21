@@ -1,6 +1,39 @@
 import { KongApi } from "../api.js";
 
 /**
+ * Authenticate as a developer to the Dev Portal
+ */
+export async function authenticateDevPortalDeveloper(
+  api: KongApi,
+  portalId: string,
+  username?: string,
+  password?: string
+) {
+  try {
+    const result = await api.authenticateDevPortalDeveloper(
+      portalId,
+      username,
+      password
+    );
+
+    // The authenticate endpoint returns a 204 No Content response with Set-Cookie headers
+    // The cookies are handled by the KongApi class, so we just need to return a success message
+    return {
+      authentication: {
+        status: "success",
+        message: "Successfully authenticated with the developer portal"
+      },
+      usage: {
+        instructions: "You are now authenticated with the developer portal. You can use other Dev Portal tools without providing a portalAccessToken.",
+        security: "Your authentication is stored in cookies managed by the API client."
+      }
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * List all available portals in Kong Konnect
  */
 export async function listPortals(
@@ -33,6 +66,7 @@ export async function listPortals(
         }
       })),
       relatedTools: [
+        "Use authenticate-developer-portal to get access to both private and public APIs",
         "Use list-apis to find APIs published to these portals",
         "Use list-applications to see applications that can subscribe to APIs"
       ]
@@ -47,27 +81,28 @@ export async function listPortals(
  */
 export async function listApis(
   api: KongApi,
-  controlPlaneId: string,
   pageSize = 10,
   pageNumber?: number,
   filterName?: string,
   filterPublished?: boolean,
-  sort?: string
+  sort?: string,
+  portalId?: string,
+  portalAccessToken?: string
 ) {
   try {
     const result = await api.listDevPortalApis(
-      controlPlaneId,
       pageSize,
       pageNumber,
       filterName,
       filterPublished,
-      sort
+      sort,
+      portalId,
+      portalAccessToken
     );
 
     // Transform the response to have consistent field names
     return {
       metadata: {
-        controlPlaneId,
         pageSize,
         pageNumber: pageNumber || 1,
         totalPages: result.meta?.page_count || 0,
@@ -109,11 +144,12 @@ export async function listApis(
  */
 export async function subscribeToApi(
   api: KongApi,
-  controlPlaneId: string,
   apiId: string,
   applicationId: string,
   appName?: string,
-  appDescription?: string
+  appDescription?: string,
+  portalId?: string,
+  portalAccessToken?: string
 ) {
   try {
     // If applicationId is "new", create a new application first
@@ -121,17 +157,19 @@ export async function subscribeToApi(
     
     if (applicationId === "new" && appName) {
       const newApp = await api.createDevPortalApplication(
-        controlPlaneId,
         appName,
-        appDescription || ""
+        appDescription || "",
+        portalId,
+        portalAccessToken
       );
       finalApplicationId = newApp.data.id;
     }
 
     const result = await api.createDevPortalSubscription(
-      controlPlaneId,
       apiId,
-      finalApplicationId
+      finalApplicationId,
+      portalId,
+      portalAccessToken
     );
 
     return {
@@ -158,37 +196,36 @@ export async function subscribeToApi(
 }
 
 /**
- * Generate an API key for a subscription
+ * Generate an API key for an application
  */
 export async function generateApiKey(
   api: KongApi,
-  controlPlaneId: string,
-  subscriptionId: string,
+  applicationId: string,
   name?: string,
-  expiresIn?: number
+  expiresIn?: number,
+  portalId?: string,
+  portalAccessToken?: string
 ) {
   try {
     const result = await api.createDevPortalApiKey(
-      controlPlaneId,
-      subscriptionId,
+      applicationId,
       name || "API Key",
-      expiresIn
+      expiresIn,
+      portalId,
+      portalAccessToken
     );
 
+    // Format the response based on the structure returned by the API
     return {
       apiKey: {
-        id: result.data.id,
-        key: result.data.key, // The actual API key value
-        name: result.data.name,
-        subscriptionId: result.data.subscription.id,
-        apiId: result.data.subscription.api.id,
-        apiName: result.data.subscription.api.name,
-        applicationId: result.data.subscription.application.id,
-        applicationName: result.data.subscription.application.name,
-        expiresAt: result.data.expires_at,
+        id: result.id,
+        key: result.credential, // The actual API key value
+        name: result.display_name,
+        applicationId: applicationId,
+        expiresAt: result.expires_at,
         metadata: {
-          createdAt: result.data.created_at,
-          updatedAt: result.data.updated_at
+          createdAt: result.created_at,
+          updatedAt: result.updated_at
         }
       },
       usage: {
@@ -206,25 +243,26 @@ export async function generateApiKey(
  */
 export async function listApplications(
   api: KongApi,
-  controlPlaneId: string,
   pageSize = 10,
   pageNumber?: number,
   filterName?: string,
-  sort?: string
+  sort?: string,
+  portalId?: string,
+  portalAccessToken?: string
 ) {
   try {
     const result = await api.listDevPortalApplications(
-      controlPlaneId,
       pageSize,
       pageNumber,
       filterName,
-      sort
+      sort,
+      portalId,
+      portalAccessToken
     );
 
     // Transform the response to have consistent field names
     return {
       metadata: {
-        controlPlaneId,
         pageSize,
         pageNumber: pageNumber || 1,
         totalPages: result.meta?.page_count || 0,
@@ -259,29 +297,30 @@ export async function listApplications(
  */
 export async function listSubscriptions(
   api: KongApi,
-  controlPlaneId: string,
   applicationId?: string,
   apiId?: string,
   pageSize = 10,
   pageNumber?: number,
   status?: string,
-  sort?: string
+  sort?: string,
+  portalId?: string,
+  portalAccessToken?: string
 ) {
   try {
     const result = await api.listDevPortalSubscriptions(
-      controlPlaneId,
       applicationId,
       apiId,
       pageSize,
       pageNumber,
       status,
-      sort
+      sort,
+      portalId,
+      portalAccessToken
     );
 
     // Transform the response to have consistent field names
     return {
       metadata: {
-        controlPlaneId,
         pageSize,
         pageNumber: pageNumber || 1,
         totalPages: result.meta?.page_count || 0,

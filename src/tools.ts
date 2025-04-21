@@ -97,6 +97,13 @@ export const tools = (): Tool[] => [
   // Dev Portal Tools
   // =========================
   {
+    method: "authenticate_developer_portal",
+    name: "Authenticate Developer Portal",
+    description: prompts.authenticateDevPortalDeveloperPrompt(),
+    parameters: parameters.authenticateDevPortalDeveloperParameters(),
+    category: "dev_portal"
+  },
+  {
     method: "list_apis",
     name: "List APIs",
     description: prompts.listApisPrompt(),

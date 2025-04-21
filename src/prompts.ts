@@ -239,11 +239,27 @@ OUTPUT:
 `;
 
 // Dev Portal Prompts
+export const authenticateDevPortalDeveloperPrompt = () => `
+Authenticate as a developer to the Kong Konnect Dev Portal.
+
+INPUT:
+  - portalId: String - ID of the portal to authenticate with
+  - username: String (optional) - Developer username (email) for authentication (defaults to DEV_PORTAL_USER environment variable)
+  - password: String (optional) - Developer password for authentication (defaults to DEV_PORTAL_PASSWORD environment variable)
+
+OUTPUT:
+  - authentication: Object - Authentication details including:
+    - accessToken: String - The access token to use for subsequent requests
+    - tokenType: String - Type of token (usually "bearer")
+    - expiresIn: Number - Time in seconds until the token expires
+    - developer: Object - Information about the authenticated developer
+  - usage: Object - Information about how to use the access token
+`;
+
 export const listApisPrompt = () => `
 List all available APIs in the Kong Konnect Dev Portal.
 
 INPUT:
-  - controlPlaneId: String - ID of the control plane
   - pageSize: Number - Number of APIs per page (1-1000, default: 10)
   - pageNumber: Number (optional) - Page number to retrieve
   - filterName: String (optional) - Filter APIs by name
@@ -251,7 +267,7 @@ INPUT:
   - sort: String (optional) - Sort field and direction (e.g. 'name,-created_at')
 
 OUTPUT:
-  - metadata: Object - Contains controlPlaneId, pageSize, pageNumber, totalPages, totalCount, filters, sort
+  - metadata: Object - Contains pageSize, pageNumber, totalPages, totalCount, filters, sort
   - apis: Array - List of APIs with details for each including:
     - apiId: String - Unique identifier for the API
     - name: String - Display name of the API
@@ -288,7 +304,6 @@ export const subscribeToApiPrompt = () => `
 Subscribe to an API in the Kong Konnect Dev Portal.
 
 INPUT:
-  - controlPlaneId: String - ID of the control plane
   - apiId: String - ID of the API to subscribe to
   - applicationId: String - ID of the application to subscribe with, or 'new' to create a new application
   - appName: String (optional) - Name for the new application (required if applicationId is 'new')
@@ -307,11 +322,10 @@ OUTPUT:
 `;
 
 export const generateApiKeyPrompt = () => `
-Generate an API key for a subscription in the Kong Konnect Dev Portal.
+Generate an API key for an application in the Kong Konnect Dev Portal.
 
 INPUT:
-  - controlPlaneId: String - ID of the control plane
-  - subscriptionId: String - ID of the subscription to generate a key for
+  - applicationId: String - ID of the application to generate a key for
   - name: String (optional) - Name for the API key (default: 'API Key')
   - expiresIn: Number (optional) - Time in seconds until the key expires
 
@@ -320,11 +334,7 @@ OUTPUT:
     - id: String - Unique identifier for the API key
     - key: String - The actual API key value (only shown once at creation)
     - name: String - Name of the API key
-    - subscriptionId: String - ID of the associated subscription
-    - apiId: String - ID of the API this key grants access to
-    - apiName: String - Name of the API
     - applicationId: String - ID of the application
-    - applicationName: String - Name of the application
     - expiresAt: String - Expiration timestamp (if applicable)
     - metadata: Object - Creation and update timestamps
   - usage: Object - Information about how to use the API key
@@ -334,14 +344,13 @@ export const listApplicationsPrompt = () => `
 List all applications in the Kong Konnect Dev Portal.
 
 INPUT:
-  - controlPlaneId: String - ID of the control plane
   - pageSize: Number - Number of applications per page (1-1000, default: 10)
   - pageNumber: Number (optional) - Page number to retrieve
   - filterName: String (optional) - Filter applications by name
   - sort: String (optional) - Sort field and direction (e.g. 'name,-created_at')
 
 OUTPUT:
-  - metadata: Object - Contains controlPlaneId, pageSize, pageNumber, totalPages, totalCount, filters, sort
+  - metadata: Object - Contains  pageSize, pageNumber, totalPages, totalCount, filters, sort
   - applications: Array - List of applications with details for each including:
     - applicationId: String - Unique identifier for the application
     - name: String - Display name of the application
@@ -355,7 +364,6 @@ export const listSubscriptionsPrompt = () => `
 List all subscriptions in the Kong Konnect Dev Portal.
 
 INPUT:
-  - controlPlaneId: String - ID of the control plane
   - applicationId: String (optional) - Filter by application ID
   - apiId: String (optional) - Filter by API ID
   - pageSize: Number - Number of subscriptions per page (1-1000, default: 10)
@@ -364,7 +372,7 @@ INPUT:
   - sort: String (optional) - Sort field and direction (e.g. 'created_at,-status')
 
 OUTPUT:
-  - metadata: Object - Contains controlPlaneId, pageSize, pageNumber, totalPages, totalCount, filters, sort
+  - metadata: Object - Contains  pageSize, pageNumber, totalPages, totalCount, filters, sort
   - subscriptions: Array - List of subscriptions with details for each including:
     - subscriptionId: String - Unique identifier for the subscription
     - apiId: String - ID of the subscribed API
