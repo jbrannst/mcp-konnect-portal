@@ -140,6 +140,39 @@ export async function listApis(
 }
 
 /**
+ * Get all specifications for an API in the Dev Portal
+ */
+export async function getApiSpecifications(
+  api: KongApi,
+  apiId: string,
+  portalId?: string,
+  portalAccessToken?: string
+) {
+  try {
+    const result = await api.getDevPortalApiSpecifications(
+      apiId,
+      portalId,
+      portalAccessToken
+    );
+
+    // Transform the response to have consistent field names
+    return {
+      specifications: result.data.map((spec: any) => ({
+        id: spec.id,
+        type: spec.api_type,
+        content: spec.content
+      })),
+      relatedTools: [
+        "Use list-apis to find more APIs",
+        "Use subscribe-to-api to subscribe to this API"
+      ]
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * Subscribe to an API in the Dev Portal
  */
 export async function subscribeToApi(
@@ -162,7 +195,7 @@ export async function subscribeToApi(
         portalId,
         portalAccessToken
       );
-      finalApplicationId = newApp.data.id;
+      finalApplicationId = newApp.id;
     }
 
     const result = await api.createDevPortalSubscription(
@@ -174,15 +207,15 @@ export async function subscribeToApi(
 
     return {
       subscription: {
-        subscriptionId: result.data.id,
-        apiId: result.data.api.id,
-        apiName: result.data.api.name,
-        applicationId: result.data.application.id,
-        applicationName: result.data.application.name,
-        status: result.data.status,
+        subscriptionId: result.id,
+        apiId: result.api_id,
+        apiName: result.api_name,
+        applicationId: result.application_id,
+        applicationName: result.application_name,
+        status: result.status,
         metadata: {
-          createdAt: result.data.created_at,
-          updatedAt: result.data.updated_at
+          createdAt: result.created_at,
+          updatedAt: result.updated_at
         }
       },
       relatedTools: [

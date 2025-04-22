@@ -3,9 +3,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import { tools } from "./tools.js";
 import { KongApi, API_REGIONS } from "./api.js";
-import * as analytics from "./operations/analytics.js";
-import * as configuration from "./operations/configuration.js";
-import * as controlPlanes from "./operations/controlPlanes.js";
 import * as devPortal from "./operations/devPortal.js";
 
 /**
@@ -18,7 +15,7 @@ class KongKonnectMcpServer extends McpServer {
     super({
       name: "kong-konnect-mcp",
       version: "1.0.0",
-      description: "Tools for managing and analyzing Kong Konnect API Gateway configurations and traffic"
+      description: "Tools for managing Kong Konnect Developer Portal"
     });
 
     // Initialize the API client
@@ -45,106 +42,6 @@ class KongKonnectMcpServer extends McpServer {
 
             // Route to appropriate handler based on method
             switch (tool.method) {
-              // Analytics tools
-              case "query_api_requests":
-                result = await analytics.queryApiRequests(
-                  this.api,
-                  args.timeRange,
-                  args.statusCodes,
-                  args.excludeStatusCodes,
-                  args.httpMethods,
-                  args.consumerIds,
-                  args.serviceIds,
-                  args.routeIds,
-                  args.maxResults
-                );
-                break;
-
-              case "get_consumer_requests":
-                result = await analytics.getConsumerRequests(
-                  this.api,
-                  args.consumerId,
-                  args.timeRange,
-                  args.successOnly,
-                  args.failureOnly,
-                  args.maxResults
-                );
-                break;
-
-              // Configuration tools
-              case "list_services":
-                result = await configuration.listServices(
-                  this.api,
-                  args.controlPlaneId,
-                  args.size,
-                  args.offset
-                );
-                break;
-
-              case "list_routes":
-                result = await configuration.listRoutes(
-                  this.api,
-                  args.controlPlaneId,
-                  args.size,
-                  args.offset
-                );
-                break;
-
-              case "list_consumers":
-                result = await configuration.listConsumers(
-                  this.api,
-                  args.controlPlaneId,
-                  args.size,
-                  args.offset
-                );
-                break;
-
-              case "list_plugins":
-                result = await configuration.listPlugins(
-                  this.api,
-                  args.controlPlaneId,
-                  args.size,
-                  args.offset
-                );
-                break;
-
-              // Control Planes tools
-              case "list_control_planes":
-                result = await controlPlanes.listControlPlanes(
-                  this.api,
-                  args.pageSize,
-                  args.pageNumber,
-                  args.filterName,
-                  args.filterClusterType,
-                  args.filterCloudGateway,
-                  args.labels,
-                  args.sort
-                );
-                break;
-
-              case "get_control_plane":
-                result = await controlPlanes.getControlPlane(
-                  this.api,
-                  args.controlPlaneId
-                );
-                break;
-
-              case "list_control_plane_group_memberships":
-                result = await controlPlanes.listControlPlaneGroupMemberships(
-                  this.api,
-                  args.groupId,
-                  args.pageSize,
-                  args.pageAfter
-                );
-                break;
-
-              case "check_control_plane_group_membership":
-                result = await controlPlanes.checkControlPlaneGroupMembership(
-                  this.api,
-                  args.controlPlaneId
-                );
-                break;
-              
               // Dev Portal tools
               case "authenticate_developer_portal":
                 result = await devPortal.authenticateDevPortalDeveloper(
@@ -163,6 +60,15 @@ class KongKonnectMcpServer extends McpServer {
                   args.filterName,
                   args.filterPublished,
                   args.sort,
+                  args.portalId,
+                  args.portalAccessToken
+                );
+                break;
+
+              case "get_api_specifications":
+                result = await devPortal.getApiSpecifications(
+                  this.api,
+                  args.apiId,
                   args.portalId,
                   args.portalAccessToken
                 );

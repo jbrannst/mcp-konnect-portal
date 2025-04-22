@@ -7,7 +7,7 @@ info:
     name: Kong
     url: https://cloud.konghq.com
 servers:
-  - url: https://affdbf0ae586.edge.eu.portal.konghq.com/
+  - url: https://04fab9da931b.edge.eu.portal.konghq.com/
     description: Production
 paths:
   /api/v3/apis:

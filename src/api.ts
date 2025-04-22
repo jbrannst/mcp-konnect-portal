@@ -1,9 +1,4 @@
 import axios, { AxiosRequestConfig } from "axios";
-import { 
-  ApiRequestFilter, 
-  TimeRange, 
-  ApiRequestsResponse 
-} from "./types.js";
 
 /**
  * Kong API Regions - Different geographical API endpoints 
@@ -49,13 +44,6 @@ export class KongApi {
       return this.portalBaseUrls.get(portalId)!;
     }
 
-    // For the specific portal ID we're working with, use the hardcoded URL
-    if (portalId === "9848ffe2-c4d1-4841-9e0d-663d151ce736") {
-      const baseUrl = "https://affdbf0ae586.edge.eu.portal.konghq.com";
-      this.portalBaseUrls.set(portalId, baseUrl);
-      return baseUrl;
-    }
-
     // Otherwise, fetch the portal details to get the canonical domain
     try {
       const portals = await this.listDevPortalPortals();
@@ -95,6 +83,12 @@ export class KongApi {
       if (usePortalBaseUrl && portalId) {
         // Use the portal base URL for developer portal endpoints
         const portalBaseUrl = await this.getPortalBaseUrl(portalId);
+        
+        // Make sure endpoint starts with /api/ for portal requests
+        if (!endpoint.startsWith("/api/") && endpoint.startsWith("/v3")) {
+          endpoint = `/api${endpoint}`;
+        }
+        
         url = `${portalBaseUrl}${endpoint}`;
         
         // For portal requests, use cookies for authentication if provided
@@ -163,112 +157,6 @@ export class KongApi {
         throw new Error(`Request Error: ${error.message}. Please check your request parameters and try again.`);
       }
     }
-  }
-
-  // Analytics API methods
-  async queryApiRequests(timeRange: string, filters: ApiRequestFilter[] = [], maxResults = 100): Promise<ApiRequestsResponse> {
-    const requestBody = {
-      time_range: {
-        type: "relative",
-        time_range: timeRange
-      } as TimeRange,
-      filters: filters,
-      size: maxResults
-    };
-
-    return this.kongRequest<ApiRequestsResponse>("/api-requests", "POST", requestBody);
-  }
-
-  // Control Planes API methods
-  async listControlPlanes(pageSize = 10, pageNumber?: number, filterName?: string, filterClusterType?: string, 
-    filterCloudGateway?: boolean, labels?: string, sort?: string): Promise<any> {
-    
-    let endpoint = `/control-planes?page[size]=${pageSize}`;
-
-    if (pageNumber) {
-      endpoint += `&page[number]=${pageNumber}`;
-    }
-
-    if (filterName) {
-      endpoint += `&filter[name][contains]=${encodeURIComponent(filterName)}`;
-    }
-    
-    if (filterClusterType) {
-      endpoint += `&filter[cluster_type][eq]=${encodeURIComponent(filterClusterType)}`;
-    }
-    
-    if (filterCloudGateway !== undefined) {
-      endpoint += `&filter[cloud_gateway]=${filterCloudGateway}`;
-    }
-
-    if (labels) {
-      endpoint += `&labels=${encodeURIComponent(labels)}`;
-    }
-
-    if (sort) {
-      endpoint += `&sort=${encodeURIComponent(sort)}`;
-    }
-
-    return this.kongRequest<any>(endpoint);
-  }
-
-  async getControlPlane(controlPlaneId: string): Promise<any> {
-    return this.kongRequest<any>(`/control-planes/${controlPlaneId}`);
-  }
-
-  async listControlPlaneGroupMemberships(groupId: string, pageSize = 10, pageAfter?: string): Promise<any> {
-    let endpoint = `/control-planes/${groupId}/group-memberships?page[size]=${pageSize}`;
-
-    if (pageAfter) {
-      endpoint += `&page[after]=${pageAfter}`;
-    }
-
-    return this.kongRequest<any>(endpoint);
-  }
-
-  async checkControlPlaneGroupMembership(controlPlaneId: string): Promise<any> {
-    return this.kongRequest<any>(`/control-planes/${controlPlaneId}/group-member-status`);
-  }
-
-  // Configuration API methods
-  async listServices(controlPlaneId: string, size = 100, offset?: string): Promise<any> {
-    let endpoint = `/control-planes/${controlPlaneId}/core-entities/services?size=${size}`;
-    
-    if (offset) {
-      endpoint += `&offset=${offset}`;
-    }
-
-    return this.kongRequest<any>(endpoint);
-  }
-
-  async listRoutes(controlPlaneId: string, size = 100, offset?: string): Promise<any> {
-    let endpoint = `/control-planes/${controlPlaneId}/core-entities/routes?size=${size}`;
-    
-    if (offset) {
-      endpoint += `&offset=${offset}`;
-    }
-
-    return this.kongRequest<any>(endpoint);
-  }
-
-  async listConsumers(controlPlaneId: string, size = 100, offset?: string): Promise<any> {
-    let endpoint = `/control-planes/${controlPlaneId}/core-entities/consumers?size=${size}`;
-    
-    if (offset) {
-      endpoint += `&offset=${offset}`;
-    }
-
-    return this.kongRequest<any>(endpoint);
-  }
-
-  async listPlugins(controlPlaneId: string, size = 100, offset?: string): Promise<any> {
-    let endpoint = `/control-planes/${controlPlaneId}/core-entities/plugins?size=${size}`;
-    
-    if (offset) {
-      endpoint += `&offset=${offset}`;
-    }
-
-    return this.kongRequest<any>(endpoint);
   }
 
   /**
@@ -495,7 +383,7 @@ export class KongApi {
 
     // If portalId is provided, use the portal base URL
     if (portalId) {
-      return this.kongRequest<any>(
+      const response = await this.kongRequest<any>(
         endpoint, 
         "POST", 
         data, 
@@ -503,6 +391,21 @@ export class KongApi {
         portalId, 
         portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
       );
+
+      // Return the response in a consistent format
+      return {
+        subscription: {
+          subscriptionId: response.id,
+          apiId: response.api_id,
+          apiName: response.api_name,
+          applicationId: response.application_id,
+          status: response.status,
+          metadata: {
+            created_at: response.created_at,
+            updated_at: response.updated_at
+          }
+        }
+      };
     } else {
       // Fall back to admin API for backward compatibility
       return this.kongRequest<any>(`/v3/subscriptions`, "POST", {
@@ -538,7 +441,7 @@ export class KongApi {
     }
 
     if (apiId) {
-      endpoint += `&filter[api.id][eq]=${apiId}`;
+      endpoint += `&filter[api_id][eq]=${apiId}`;  // Updated to use flat api_id field
     }
 
     if (status) {
@@ -551,7 +454,7 @@ export class KongApi {
 
     // If portalId is provided, use the portal base URL
     if (portalId) {
-      return this.kongRequest<any>(
+      const response = await this.kongRequest<any>(
         endpoint, 
         "GET", 
         null, 
@@ -559,6 +462,24 @@ export class KongApi {
         portalId, 
         portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
       );
+
+      // Transform the response to match the expected format
+      return {
+        meta: response.meta,
+        data: response.data.map((item: any) => ({
+          subscription: {
+            subscriptionId: item.id,
+            apiId: item.api_id,
+            apiName: item.api_name,
+            applicationId: item.application_id,
+            status: item.status,
+            metadata: {
+              created_at: item.created_at,
+              updated_at: item.updated_at
+            }
+          }
+        }))
+      };
     } else {
       // Fall back to admin API for backward compatibility
       let adminEndpoint = `/v3/subscriptions?page[size]=${pageSize}`;
@@ -585,6 +506,70 @@ export class KongApi {
       
       return this.kongRequest<any>(adminEndpoint);
     }
+  }
+
+  /**
+   * Get all specifications for an API
+   * @param apiId The ID or slug of the API
+   * @param portalId Optional portal ID to use portal-specific endpoint
+   * @param portalAccessToken Optional portal access token
+   * @returns List of API specifications
+   */
+  async getDevPortalApiSpecifications(
+    apiId: string,
+    portalId?: string,
+    portalAccessToken?: string
+  ): Promise<any> {
+    // First get the list of specifications
+    const endpoint = `/api/v3/apis/${apiId}/specifications`;
+    const specList = portalId ? 
+      await this.kongRequest<any>(
+        endpoint,
+        "GET",
+        null,
+        true,
+        portalId,
+        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+      ) :
+      await this.kongRequest<any>(`/v3/apis/${apiId}/specifications`);
+
+    console.error(`Specification list response: ${JSON.stringify(specList)}`);
+    
+    // Check if we have specifications data
+    if (!specList || !specList.data || !Array.isArray(specList.data)) {
+      console.error("No specifications found or invalid response format");
+      return {
+        data: [],
+        meta: specList?.meta || { page: { size: 0, total: 0, number: 1 } }
+      };
+    }
+
+    // Then fetch the content for each specification
+    const specifications = [];
+    for (const spec of specList.data) {
+      const specEndpoint = `/api/v3/apis/${apiId}/specifications/${spec.id}`;
+      const specContent = portalId ?
+        await this.kongRequest<any>(
+          specEndpoint,
+          "GET",
+          null,
+          true,
+          portalId,
+          portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+        ) :
+        await this.kongRequest<any>(`/v3/apis/${apiId}/specifications/${spec.id}`);
+      
+      specifications.push({
+        id: spec.id,
+        type: spec.type,
+        content: specContent.content
+      });
+    }
+
+    return {
+      data: specifications,
+      meta: specList.meta
+    };
   }
 
   async createDevPortalApiKey(
