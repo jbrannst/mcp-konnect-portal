@@ -252,6 +252,11 @@ export class KongApi {
     portalId?: string,
     portalAccessToken?: string
   ): Promise<any> {
+    // Portal ID is required for listing APIs
+    if (!portalId) {
+      throw new Error("Portal ID is required for listing APIs. Use the list-portals tool to get a portal ID, then authenticate with that portal using authenticate-developer-portal.");
+    }
+
     // Using portal API endpoint for Dev Portal
     let endpoint = `/api/v3/apis?page[size]=${pageSize}`;
 
@@ -271,20 +276,14 @@ export class KongApi {
       endpoint += `&sort=${encodeURIComponent(sort)}`;
     }
 
-    // If portalId is provided, use the portal base URL
-    if (portalId) {
-      return this.kongRequest<any>(
-        endpoint, 
-        "GET", 
-        null, 
-        true, 
-        portalId, 
-        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
-      );
-    } else {
-      // Fall back to admin API for backward compatibility
-      return this.kongRequest<any>(`/v3/apis?page[size]=${pageSize}`);
-    }
+    return this.kongRequest<any>(
+      endpoint, 
+      "GET", 
+      null, 
+      true, 
+      portalId, 
+      portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+    );
   }
 
   async createDevPortalApplication(
@@ -293,6 +292,11 @@ export class KongApi {
     portalId?: string,
     portalAccessToken?: string
   ): Promise<any> {
+    // Portal ID is required for creating applications
+    if (!portalId) {
+      throw new Error("Portal ID is required for creating applications. Use the list-portals tool to get a portal ID, then authenticate with that portal using authenticate-developer-portal.");
+    }
+
     // Using portal API endpoint for Dev Portal
     const endpoint = `/api/v3/applications`;
     const data = {
@@ -300,20 +304,14 @@ export class KongApi {
       description
     };
 
-    // If portalId is provided, use the portal base URL
-    if (portalId) {
-      return this.kongRequest<any>(
-        endpoint, 
-        "POST", 
-        data, 
-        true, 
-        portalId, 
-        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
-      );
-    } else {
-      // Fall back to admin API for backward compatibility
-      return this.kongRequest<any>(`/v3/applications`, "POST", data);
-    }
+    return this.kongRequest<any>(
+      endpoint, 
+      "POST", 
+      data, 
+      true, 
+      portalId, 
+      portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+    );
   }
 
   async listDevPortalPortals(
@@ -353,20 +351,20 @@ export class KongApi {
       endpoint += `&sort=${encodeURIComponent(sort)}`;
     }
 
-    // If portalId is provided, use the portal base URL
-    if (portalId) {
-      return this.kongRequest<any>(
-        endpoint, 
-        "GET", 
-        null, 
-        true, 
-        portalId, 
-        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
-      );
-    } else {
-      // Fall back to admin API for backward compatibility
-      return this.kongRequest<any>(`/v3/applications?page[size]=${pageSize}`);
+    // Portal ID is required for listing applications
+    if (!portalId) {
+      throw new Error("Portal ID is required for listing applications. Use the list-portals tool to get a portal ID, then authenticate with that portal using authenticate-developer-portal.");
     }
+
+    // Use the portal base URL
+    return this.kongRequest<any>(
+      endpoint, 
+      "GET", 
+      null, 
+      true, 
+      portalId, 
+      portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+    );
   }
 
   async createDevPortalSubscription(
@@ -375,44 +373,40 @@ export class KongApi {
     portalId?: string,
     portalAccessToken?: string
   ): Promise<any> {
+    // Portal ID is required for creating subscriptions
+    if (!portalId) {
+      throw new Error("Portal ID is required for creating subscriptions. Use the list-portals tool to get a portal ID, then authenticate with that portal using authenticate-developer-portal.");
+    }
+
     // Using portal API endpoint for Dev Portal
     const endpoint = `/api/v3/applications/${applicationId}/registrations`;
     const data = {
       api_id: apiId
     };
 
-    // If portalId is provided, use the portal base URL
-    if (portalId) {
-      const response = await this.kongRequest<any>(
-        endpoint, 
-        "POST", 
-        data, 
-        true, 
-        portalId, 
-        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
-      );
+    const response = await this.kongRequest<any>(
+      endpoint, 
+      "POST", 
+      data, 
+      true, 
+      portalId, 
+      portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+    );
 
-      // Return the response in a consistent format
-      return {
-        subscription: {
-          subscriptionId: response.id,
-          apiId: response.api_id,
-          apiName: response.api_name,
-          applicationId: response.application_id,
-          status: response.status,
-          metadata: {
-            created_at: response.created_at,
-            updated_at: response.updated_at
-          }
+    // Return the response in a consistent format
+    return {
+      subscription: {
+        subscriptionId: response.id,
+        apiId: response.api_id,
+        apiName: response.api_name,
+        applicationId: response.application_id,
+        status: response.status,
+        metadata: {
+          created_at: response.created_at,
+          updated_at: response.updated_at
         }
-      };
-    } else {
-      // Fall back to admin API for backward compatibility
-      return this.kongRequest<any>(`/v3/subscriptions`, "POST", {
-        api: { id: apiId },
-        application: { id: applicationId }
-      });
-    }
+      }
+    };
   }
 
   async listDevPortalSubscriptions(
@@ -425,6 +419,11 @@ export class KongApi {
     portalId?: string,
     portalAccessToken?: string
   ): Promise<any> {
+    // Portal ID is required for listing subscriptions
+    if (!portalId) {
+      throw new Error("Portal ID is required for listing subscriptions. Use the list-portals tool to get a portal ID, then authenticate with that portal using authenticate-developer-portal.");
+    }
+
     // Using portal API endpoint for Dev Portal
     let endpoint: string;
     
@@ -452,66 +451,38 @@ export class KongApi {
       endpoint += `&sort=${encodeURIComponent(sort)}`;
     }
 
-    // If portalId is provided, use the portal base URL
-    if (portalId) {
-      const response = await this.kongRequest<any>(
-        endpoint, 
-        "GET", 
-        null, 
-        true, 
-        portalId, 
-        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
-      );
+    const response = await this.kongRequest<any>(
+      endpoint, 
+      "GET", 
+      null, 
+      true, 
+      portalId, 
+      portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+    );
 
-      // Transform the response to match the expected format
-      return {
-        meta: response.meta,
-        data: response.data.map((item: any) => ({
-          subscription: {
-            subscriptionId: item.id,
-            apiId: item.api_id,
-            apiName: item.api_name,
-            applicationId: item.application_id,
-            status: item.status,
-            metadata: {
-              created_at: item.created_at,
-              updated_at: item.updated_at
-            }
+    // Transform the response to match the expected format
+    return {
+      meta: response.meta,
+      data: response.data.map((item: any) => ({
+        subscription: {
+          subscriptionId: item.id,
+          apiId: item.api_id,
+          apiName: item.api_name,
+          applicationId: item.application_id,
+          status: item.status,
+          metadata: {
+            created_at: item.created_at,
+            updated_at: item.updated_at
           }
-        }))
-      };
-    } else {
-      // Fall back to admin API for backward compatibility
-      let adminEndpoint = `/v3/subscriptions?page[size]=${pageSize}`;
-      
-      if (pageNumber) {
-        adminEndpoint += `&page[number]=${pageNumber}`;
-      }
-      
-      if (applicationId) {
-        adminEndpoint += `&filter[application.id][eq]=${applicationId}`;
-      }
-      
-      if (apiId) {
-        adminEndpoint += `&filter[api.id][eq]=${apiId}`;
-      }
-      
-      if (status) {
-        adminEndpoint += `&filter[status][eq]=${status}`;
-      }
-      
-      if (sort) {
-        adminEndpoint += `&sort=${encodeURIComponent(sort)}`;
-      }
-      
-      return this.kongRequest<any>(adminEndpoint);
-    }
+        }
+      }))
+    };
   }
 
   /**
    * Get all specifications for an API
    * @param apiId The ID or slug of the API
-   * @param portalId Optional portal ID to use portal-specific endpoint
+   * @param portalId Portal ID to use portal-specific endpoint
    * @param portalAccessToken Optional portal access token
    * @returns List of API specifications
    */
@@ -520,18 +491,21 @@ export class KongApi {
     portalId?: string,
     portalAccessToken?: string
   ): Promise<any> {
+    // Portal ID is required for getting API specifications
+    if (!portalId) {
+      throw new Error("Portal ID is required for getting API specifications. Use the list-portals tool to get a portal ID, then authenticate with that portal using authenticate-developer-portal.");
+    }
+
     // First get the list of specifications
     const endpoint = `/api/v3/apis/${apiId}/specifications`;
-    const specList = portalId ? 
-      await this.kongRequest<any>(
-        endpoint,
-        "GET",
-        null,
-        true,
-        portalId,
-        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
-      ) :
-      await this.kongRequest<any>(`/v3/apis/${apiId}/specifications`);
+    const specList = await this.kongRequest<any>(
+      endpoint,
+      "GET",
+      null,
+      true,
+      portalId,
+      portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+    );
 
     console.error(`Specification list response: ${JSON.stringify(specList)}`);
     
@@ -548,16 +522,14 @@ export class KongApi {
     const specifications = [];
     for (const spec of specList.data) {
       const specEndpoint = `/api/v3/apis/${apiId}/specifications/${spec.id}`;
-      const specContent = portalId ?
-        await this.kongRequest<any>(
-          specEndpoint,
-          "GET",
-          null,
-          true,
-          portalId,
-          portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
-        ) :
-        await this.kongRequest<any>(`/v3/apis/${apiId}/specifications/${spec.id}`);
+      const specContent = await this.kongRequest<any>(
+        specEndpoint,
+        "GET",
+        null,
+        true,
+        portalId,
+        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+      );
       
       specifications.push({
         id: spec.id,
@@ -579,6 +551,11 @@ export class KongApi {
     portalId?: string,
     portalAccessToken?: string
   ): Promise<any> {
+    // Portal ID is required for generating API keys
+    if (!portalId) {
+      throw new Error("Portal ID is required for generating API keys. Use the list-portals tool to get a portal ID, then authenticate with that portal using authenticate-developer-portal.");
+    }
+
     // Using portal API endpoint for Dev Portal
     const endpoint = `/api/v3/applications/${applicationId}/credentials`;
     const data: any = {
@@ -589,30 +566,13 @@ export class KongApi {
       data.expires_in = expiresIn;
     }
 
-    // If portalId is provided, use the portal base URL
-    if (portalId) {
-      return this.kongRequest<any>(
-        endpoint, 
-        "POST", 
-        data, 
-        true, 
-        portalId, 
-        portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
-      );
-    } else {
-      // Fall back to admin API for backward compatibility
-      const adminData: any = {
-        name,
-        application: {
-          id: applicationId
-        }
-      };
-      
-      if (expiresIn) {
-        adminData.expires_in = expiresIn;
-      }
-      
-      return this.kongRequest<any>(`/v3/api-keys`, "POST", adminData);
-    }
+    return this.kongRequest<any>(
+      endpoint, 
+      "POST", 
+      data, 
+      true, 
+      portalId, 
+      portalAccessToken ? `portalaccesstoken=${portalAccessToken}` : undefined
+    );
   }
 }
