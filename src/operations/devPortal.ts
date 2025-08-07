@@ -66,7 +66,7 @@ export async function listPortals(
         }
       })),
       relatedTools: [
-        "Use authenticate-developer-portal to get access to both private and public APIs",
+        "Use authenticate-developer-portal to get access also to private APIs",
         "Use list-apis to find APIs published to these portals",
         "Use list-applications to see applications that can subscribe to APIs"
       ]
@@ -130,6 +130,7 @@ export async function listApis(
         }
       })),
       relatedTools: [
+        "Use authenticate-developer-portal to get access also to private APIs",
         "Use subscribe-to-api to subscribe to an API",
         "Use generate-api-key to generate an API key for a subscription"
       ]

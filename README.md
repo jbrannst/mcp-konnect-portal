@@ -1,11 +1,11 @@
-# Kong Konnect MCP Server
+# Kong Konnect Portal MCP Server
 
 ![Static Badge](https://img.shields.io/badge/Release-Tech%20Preview-FFA500?style=plastic)
 
 A Model Context Protocol (MCP) server for interacting with Kong Konnect Developer Portal APIs, allowing AI assistants to manage APIs, applications, and subscriptions.
 
 
-https://github.com/user-attachments/assets/19c2f716-49b5-46c3-9457-65b3784e2111
+https://www.linkedin.com/posts/johannesbrannstrom_apis-apimanagement-aidevelopment-activity-7322898216771829761-U8EX?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAAXAu4BeTA_ITO23gjabDwrGAfw0GBQrHA
 
 
 ## Table of Contents
@@ -78,6 +78,10 @@ export KONNECT_ACCESS_TOKEN=kpat_api_key_here
 # Optional: The API region to use (defaults to US)
 # Possible values: US, EU, AU, ME, IN
 export KONNECT_REGION=us
+
+# Optional: If your dev portal allows login with username and password in order to access private APIs you can supply default values. 
+export DEV_PORTAL_USER=your_dev_portal_email,
+export DEV_PORTAL_PASSWORD=your_password
 ```
 
 ## Available Tools

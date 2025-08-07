@@ -42,7 +42,6 @@ export const listApisParameters = () => z.object({
     .optional()
     .describe("Sort field and direction (e.g. 'name,-created_at')"),
   portalId: z.string()
-    .optional()
     .describe("Portal ID to use for direct portal API access (obtainable from list-portals tool)"),
   portalAccessToken: z.string()
     .optional()
