@@ -51,7 +51,8 @@ src/
 ### Prerequisites
 - Node.js 20 or higher
 - A Kong Konnect account with API access
-- A client with MCP capabilities (e.g. Claude Desktop, Cursor, etc...)
+- A Kong Konnect Developer Portal with an API published (public or private)
+- A client with MCP capabilities (e.g. Claude Desktop, Cline, Cursor, etc...)
 
 ### Setup
 
